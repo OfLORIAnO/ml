@@ -93,8 +93,16 @@ def visualize_network():
     for u, v, w in edges:
         G.add_edge(u, v, weight=w)
 
-    # Получаем позиции для каждого узла
-    pos = nx.spring_layout(G)
+    # Ручное расположение узлов
+    pos = {
+        "x1": (-2, 2),
+        "x2": (-2, 0),
+        "x3": (-2, -2),
+        "NOT": (0, 2),
+        "AND": (2, 1),
+        "OR": (4, 0),
+        "y": (6, 0),
+    }
 
     # Рисуем граф
     plt.figure(figsize=(10, 8))
@@ -102,9 +110,9 @@ def visualize_network():
         G,
         pos,
         with_labels=True,
-        node_size=3000,
+        node_size=1000,
         node_color="lightblue",
-        font_size=10,
+        font_size=8,
         font_weight="bold",
         arrows=True,
     )
