@@ -45,6 +45,69 @@ class Perceptron:
                     # Обновляем bias (первый вес)
                     self.weights[0] += self.learning_rate * error
 
+    def draw_decision_boundary(
+        self, X: np.ndarray, y: np.ndarray, single_var: bool = False
+    ) -> None:
+        """
+        Визуализирует разделяющую линию (границу решения) для текущих весов персептрона.
+        Также отображает входные данные и их классы (с символами "+" для 1 и "-" для 0).
+
+        :param X: Входные данные (включая bias).
+        :param y: Целевые значения (0 или 1).
+        :param single_var: Флаг, если у персептрона один входной параметр (для NOT-функции).
+        """
+        plt.figure(figsize=(6, 6))
+
+        # Прорисовка точек с разными символами для классов 0 и 1
+        for i, (inputs, target) in enumerate(zip(X, y)):
+            marker_style = "+" if target == 1 else "_"
+            color = "red" if target == 1 else "blue"
+            if not single_var:
+                plt.scatter(
+                    inputs[1], inputs[2], color=color, marker=marker_style, s=100
+                )
+            else:
+                plt.scatter(inputs[1], 0, color=color, marker=marker_style, s=100)
+
+        if not single_var:
+            # Диапазон x для двумерного случая
+            x_range = [-0.5, 1.5]
+            # Вычисляем значения y для разделяющей линии
+            y_start = (-self.weights[1] * x_range[0] - self.weights[0]) / self.weights[
+                2
+            ]
+            y_end = (-self.weights[1] * x_range[1] - self.weights[0]) / self.weights[2]
+            plt.ylabel("x2")
+        else:
+            # Одномерный случай
+            x_intercept = -self.weights[0] / self.weights[1]
+            y_range = [-0.5, 1.5]
+
+        plt.xlabel("x1")
+        plt.axis([-0.5, 1.5, -0.5, 1.5])
+
+        # Прорисовка разделяющей линии
+        if not single_var:
+            plt.plot(
+                x_range,
+                [y_start, y_end],
+                label="Decision Boundary",
+                color="green",
+                linewidth=2,
+            )
+        else:
+            plt.plot(
+                [x_intercept, x_intercept],
+                y_range,
+                label="Decision Boundary",
+                color="green",
+                linewidth=2,
+            )
+
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
 
 # Создаем персептроны для логических операций AND, OR, NOT
 and_perceptron = Perceptron(input_size=2)
@@ -162,3 +225,7 @@ def visualize_network() -> None:
 
 # Визуализация сети
 visualize_network()
+
+and_perceptron.draw_decision_boundary(X_and_or, y_and)
+or_perceptron.draw_decision_boundary(X_and_or, y_or)
+not_perceptron.draw_decision_boundary(X_not, y_not, single_var=True)
