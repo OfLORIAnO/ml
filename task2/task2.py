@@ -22,15 +22,10 @@ class Perceptron:
         :param inputs: Входные данные (включая bias).
         :return: Результат предсказания (1 или 0).
         """
-        try:
-            # Вычисляем взвешенную сумму
-            summation = np.dot(inputs, self.weights)
-            # Применяем пороговую активацию: если сумма >= 0, возвращаем 1, иначе 0
-            return 1 if summation >= 0 else 0
-        except:
-            # В случае ошибки выводим входы и веса для отладки
-            print(f"inputs in predict: {inputs}, self.weights: {self.weights}")
-            return 0
+        # Вычисляем взвешенную сумму
+        summation = np.dot(inputs, self.weights)
+        # Применяем пороговую активацию: если сумма >= 0, возвращаем 1, иначе 0
+        return 1 if summation >= 0 else 0
 
     def train(self, X: np.ndarray, y: np.ndarray, epochs: int = 100) -> None:
         """
