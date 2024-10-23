@@ -91,7 +91,7 @@ class Perceptron:
             plt.plot(
                 x_range,
                 [y_start, y_end],
-                label="Decision Boundary",
+                label="Финальная модель",
                 color="green",
                 linewidth=2,
             )
@@ -99,7 +99,7 @@ class Perceptron:
             plt.plot(
                 [x_intercept, x_intercept],
                 y_range,
-                label="Decision Boundary",
+                label="Финальная модель",
                 color="green",
                 linewidth=2,
             )
