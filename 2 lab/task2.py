@@ -138,10 +138,10 @@ def logical_function(x1, x2, x3) -> int:
     :return: Результат логической функции (0 или 1).
     """
     not_result = not_perceptron.predict(np.array([1, x1]))  # NOT(x1)
-    and_result = and_perceptron.predict(np.array([1, not_result, x2]))  # NOT(x1) AND x2
+    and_result = and_perceptron.predict(np.array([1, not_result, x3]))  # NOT(x1) AND x3
     final_result = or_perceptron.predict(
-        np.array([1, and_result, x3])
-    )  # (NOT(x1) AND x2) OR x3
+        np.array([1, and_result, x2])
+    )  # (NOT(x1) AND x3) OR x2
     return final_result
 
 
