@@ -159,7 +159,7 @@ X_test = np.array(
     ]
 )
 
-print("Результаты предсказаний логической функции (NOT(x1) AND x2) OR x3:")
+print("Результаты предсказаний логической функции (NOT(x1) AND x3) OR x3")
 for inputs in X_test:
     x1, x2, x3 = inputs
     result = logical_function(x1, x2, x3)
@@ -181,8 +181,8 @@ def visualize_network() -> None:
     edges = [
         ("x1", "NOT", not_perceptron.weights[0]),  # NOT(x1)
         ("NOT", "AND", and_perceptron.weights[0]),  # NOT(x1) AND x2
-        ("x2", "AND", and_perceptron.weights[1]),  # x2 -> AND
-        ("x3", "OR", or_perceptron.weights[1]),  # x3 -> OR
+        ("x3", "AND", and_perceptron.weights[1]),  # x2 -> AND
+        ("x2", "OR", or_perceptron.weights[1]),  # x3 -> OR
         ("AND", "OR", or_perceptron.weights[0]),  # (NOT(x1) AND x2) -> OR
         ("OR", "y", 1.0),  # Финальный выход y
     ]
@@ -194,8 +194,8 @@ def visualize_network() -> None:
     # Ручное расположение узлов
     pos = {
         "x1": (-2, 2),
-        "x2": (-2, 0),
-        "x3": (-2, -2),
+        "x2": (-2, -2),
+        "x3": (-2, 0),
         "NOT": (0, 2),
         "AND": (2, 1),
         "OR": (4, 0),
