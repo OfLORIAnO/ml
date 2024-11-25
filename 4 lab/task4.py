@@ -1,155 +1,87 @@
 import numpy as np
 
-# Параметры нейронной сети
-input_size = 2
-hidden_layer1_size = 3
-hidden_layer2_size = 3
-output_size = 1
-learning_rate = 0.1
-epochs = 10001
+# Инициализация параметров
+np.random.seed(3)
+LEARNING_RATE = 0.1
+index_list = [0, 1, 2, 3]
 
-
-# Функция активации и её производная
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
-
-
-def sigmoid_derivative(x):
-    return x * (1 - x)
-
-
-def relu(x):
-    return np.maximum(0, x)
-
-
-def relu_derivative(x):
-    return np.where(x > 0, 1, 0)
+# Обучающие данные
+x_train = np.array(
+    [
+        [1.0, -1.0, -1.0],
+        [1.0, -1.0, 1.0],
+        [1.0, 1.0, -1.0],
+        [1.0, 1.0, 1.0],
+    ]
+)
+y_train = np.array([0.0, 1.0, 1.0, 0.0])
 
 
 # Инициализация весов
-def initialize_weights():
-    np.random.seed(1)
-    weights_input_hidden1 = np.random.uniform(-1, 1, (input_size, hidden_layer1_size))
-    weights_hidden1_hidden2 = np.random.uniform(
-        -1, 1, (hidden_layer1_size, hidden_layer2_size)
-    )
-    weights_hidden2_output = np.random.uniform(-1, 1, (hidden_layer2_size, output_size))
-    return weights_input_hidden1, weights_hidden1_hidden2, weights_hidden2_output
+def neuron_w(input_count):
+    weights = np.random.uniform(-1.0, 1.0, input_count + 1)
+    return weights
 
 
-# Прямое распространение
-def forward_propagation(
-    x_train, weights_input_hidden1, weights_hidden1_hidden2, weights_hidden2_output
-):
-    layer1_output = relu(np.dot(x_train, weights_input_hidden1))
-    layer2_output = relu(np.dot(layer1_output, weights_hidden1_hidden2))
-    final_output = sigmoid(np.dot(layer2_output, weights_hidden2_output))
-    return layer1_output, layer2_output, final_output
+# Добавляем два скрытых слоя и выходной слой
+n_w = [neuron_w(2), neuron_w(2), neuron_w(3), neuron_w(3)]
+n_y = [0, 0, 0, 0]
+n_error = [0, 0, 0, 0]
 
 
-# Вычисление ошибки
-def compute_error(y_train, final_output):
-    return y_train - final_output
+# Прямой проход
+def forward_pass(x):
+    global n_y
+    n_y[0] = np.tanh(np.dot(n_w[0], x))
+    n_y[1] = np.tanh(np.dot(n_w[1], x))
+
+    hidden_inputs = np.array([1.0, n_y[0], n_y[1]])
+    n_y[2] = np.tanh(np.dot(n_w[2], hidden_inputs))
+
+    output_inputs = np.array([1.0, n_y[2], n_y[1]])
+    z_out = np.dot(n_w[3], output_inputs)
+    n_y[3] = 1.0 / (1.0 + np.exp(-z_out))
 
 
-# Обратное распространение
-def backpropagation(
-    error,
-    final_output,
-    layer2_output,
-    layer1_output,
-    weights_hidden2_output,
-    weights_hidden1_hidden2,
-):
-    d_output = error * sigmoid_derivative(final_output)
-    d_hidden2 = d_output.dot(weights_hidden2_output.T) * relu_derivative(layer2_output)
-    d_hidden1 = d_hidden2.dot(weights_hidden1_hidden2.T) * relu_derivative(
-        layer1_output
-    )
-    return d_output, d_hidden2, d_hidden1
+# Обратный проход
+def backward_pass(y_truth):
+    global n_error
+    error_prime = y_truth - n_y[3]
+    n_error[3] = error_prime * n_y[3] * (1.0 - n_y[3])
+
+    derivative = 1.0 - n_y[2] ** 2
+    n_error[2] = n_w[3][1] * n_error[3] * derivative
+
+    derivative = 1.0 - n_y[0] ** 2
+    n_error[0] = n_w[2][1] * n_error[2] * derivative
+
+    derivative = 1.0 - n_y[1] ** 2
+    n_error[1] = (n_w[2][2] * n_error[2] + n_w[3][2] * n_error[3]) * derivative
 
 
 # Обновление весов
-def update_weights(
-    weights_input_hidden1,
-    weights_hidden1_hidden2,
-    weights_hidden2_output,
-    layer1_output,
-    layer2_output,
-    d_output,
-    d_hidden2,
-    d_hidden1,
-    x_train,
-):
-    weights_hidden2_output += layer2_output.T.dot(d_output) * learning_rate
-    weights_hidden1_hidden2 += layer1_output.T.dot(d_hidden2) * learning_rate
-    weights_input_hidden1 += x_train.T.dot(d_hidden1) * learning_rate
-    return weights_input_hidden1, weights_hidden1_hidden2, weights_hidden2_output
+def adjust_weights(x):
+    global n_w
+    n_w[0] += x * LEARNING_RATE * n_error[0]
+    n_w[1] += x * LEARNING_RATE * n_error[1]
+
+    hidden_inputs = np.array([1.0, n_y[0], n_y[1]])
+    n_w[2] += hidden_inputs * LEARNING_RATE * n_error[2]
+
+    output_inputs = np.array([1.0, n_y[2], n_y[1]])
+    n_w[3] += output_inputs * LEARNING_RATE * n_error[3]
 
 
 # Основной цикл обучения
-def train(x_train, y_train):
-    # Инициализируем веса
-    weights_input_hidden1, weights_hidden1_hidden2, weights_hidden2_output = (
-        initialize_weights()
-    )
+all_correct = False
+while not all_correct:
+    all_correct = True
+    np.random.shuffle(index_list)
+    for i in index_list:
+        forward_pass(x_train[i])
+        backward_pass(y_train[i])
+        adjust_weights(x_train[i])
 
-    for epoch in range(epochs):
-        # Прямое распространение
-        layer1_output, layer2_output, final_output = forward_propagation(
-            x_train,
-            weights_input_hidden1,
-            weights_hidden1_hidden2,
-            weights_hidden2_output,
-        )
-
-        # Печать промежуточных значений
-        if epoch == 1000:
-            print("Layer 1 Output:\n", layer1_output)
-            print("Layer 2 Output:\n", layer2_output)
-            print("Final Output:\n", final_output)
-            print("---------------")
-
-        # Вычисление ошибки
-        error = compute_error(y_train, final_output)
-        if epoch % 1000 == 0:
-            print(f"Error at epoch {epoch}: {np.mean(np.abs(error))}")
-
-        # Обратное распространение
-        d_output, d_hidden2, d_hidden1 = backpropagation(
-            error,
-            final_output,
-            layer2_output,
-            layer1_output,
-            weights_hidden2_output,
-            weights_hidden1_hidden2,
-        )
-
-        # Обновление весов
-        weights_input_hidden1, weights_hidden1_hidden2, weights_hidden2_output = (
-            update_weights(
-                weights_input_hidden1,
-                weights_hidden1_hidden2,
-                weights_hidden2_output,
-                layer1_output,
-                layer2_output,
-                d_output,
-                d_hidden2,
-                d_hidden1,
-                x_train,
-            )
-        )
-
-    return final_output
-
-
-# Данные для обучения
-x_train = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
-y_train = np.array([[0], [1], [1], [0]])
-
-# Запуск обучения
-final_output = train(x_train, y_train)
-
-# Проверка результатов
-print("Final output after training:")
-print(final_output)
+        # Проверка правильности классификации
+        if (y_train[i] < 0.5 and n_y[3] >= 0.5) or (y_train[i] >= 0.5 and n_y[3] < 0.5):
+            all_correct = False
