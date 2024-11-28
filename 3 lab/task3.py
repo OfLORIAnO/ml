@@ -68,13 +68,11 @@ def backward_pass(y_truth):
 # Функция обновления весов
 def adjust_weights(x):
     global n_w
-    n_w[0] += x * LEARNING_RATE * n_error[0]  # Обновление весов первого нейрона
-    n_w[1] += x * LEARNING_RATE * n_error[1]  # Обновление весов второго нейрона
-
+    print(x)
+    n_w[0] += x * LEARNING_RATE  # Обновление весов первого нейрона
+    n_w[1] += x * LEARNING_RATE  # Обновление весов второго нейрона
     n2_inputs = np.array([1.0, n_y[0], n_y[1]])  # Входы для выходного нейрона
-    n_w[2] += (
-        n2_inputs * LEARNING_RATE * n_error[2]
-    )  # Обновление весов выходного нейрона
+    n_w[2] += n2_inputs * LEARNING_RATE  # Обновление весов выходного нейрона
 
 
 # Функция для отображения текущих весов каждого нейрона
