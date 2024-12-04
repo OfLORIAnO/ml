@@ -66,7 +66,7 @@ class SimpleNN:
 model = SimpleNN(input_size=784, hidden_size=32)
 
 # Гиперпараметры
-epochs = 100_000
+epochs = 1_000
 learning_rate = 0.1
 
 # Обучение
