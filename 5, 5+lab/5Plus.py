@@ -66,7 +66,7 @@ class SimpleNN:
 model = SimpleNN(input_size=784, hidden_size=32)
 
 # Гиперпараметры
-epochs = 100_000
+epochs = 3_000
 learning_rate = 0.1
 
 # Обучение
@@ -82,14 +82,36 @@ y_pred_class = (y_pred >= 0.5).astype(int)
 accuracy = np.mean(y_pred_class.flatten() == y_test)
 print(f"Test Accuracy: {accuracy * 100:.2f}%")
 
-################################
-# Берём любое изображение из данных (например, первое)
-# index = 0  # Индекс изображения, которое хотим показать
-# image = X_train[index].reshape(28, 28)  # Преобразуем в 28x28
 
-# # Показываем изображение
-# plt.imshow(image, cmap="gray")  # Выводим в оттенках серого
-# plt.title(f"Label: {y[index]}")  # Подписываем метку
-# plt.axis("off")  # Отключаем оси
-# plt.show()
-################################
+def show_multiple_test_images():
+    # Индексы изображений с меткой 4 и не 4
+    indices_4 = np.where(y_test == 1)[0][:10]  # Первые 10 изображений с меткой 4
+    indices_not_4 = np.where(y_test == 0)[0][:10]  # Первые 10 изображений с меткой не 4
+
+    # Объединяем индексы
+    indices = np.concatenate((indices_4, indices_not_4))
+    labels = ["4"] * 10 + ["Not 4"] * 10
+
+    # Создаем фигуру
+    fig, axes = plt.subplots(2, 10, figsize=(15, 5))
+
+    for i, (ax, idx, label) in enumerate(zip(axes.ravel(), indices, labels)):
+        # Преобразуем изображение
+        image = X_test[idx].reshape(28, 28)
+
+        # Получаем предсказание сети
+        prediction = model.forward(X_test[idx : idx + 1])[0, 0]
+
+        # Отображаем изображение
+        ax.imshow(image, cmap="gray")
+        ax.set_title(
+            f"{label}\nPred: {prediction:.5f}", fontsize=8
+        )  # Подпись с меткой и предсказанием
+        ax.axis("off")
+
+    # Убираем лишние отступы
+    plt.tight_layout()
+    plt.show()
+
+
+show_multiple_test_images()

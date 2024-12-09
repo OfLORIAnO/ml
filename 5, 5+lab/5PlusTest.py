@@ -66,7 +66,7 @@ class SimpleNN:
 model = SimpleNN(input_size=784, hidden_size=32)
 
 # Гиперпараметры
-epochs = 1_000
+epochs = 3_000
 learning_rate = 0.1
 
 # Обучение
@@ -82,14 +82,35 @@ y_pred_class = (y_pred >= 0.5).astype(int)
 accuracy = np.mean(y_pred_class.flatten() == y_test)
 print(f"Test Accuracy: {accuracy * 100:.2f}%")
 
-################################
-# Берём любое изображение из данных (например, первое)
-# index = 0  # Индекс изображения, которое хотим показать
-# image = X_train[index].reshape(28, 28)  # Преобразуем в 28x28
 
-# # Показываем изображение
-# plt.imshow(image, cmap="gray")  # Выводим в оттенках серого
-# plt.title(f"Label: {y[index]}")  # Подписываем метку
-# plt.axis("off")  # Отключаем оси
-# plt.show()
-################################
+def show_test_image():
+    # Индекс изображения, которое хотим показать
+    index_4 = np.where(y_test == 1)[0][
+        9
+    ]  # Индекс первого изображения, метка которого равна 1 (цифра 4)
+    index_not_4 = np.where(y_test == 0)[0][
+        0
+    ]  # Индекс первого изображения, метка которого равна 0 (не цифра 4)
+
+    # Преобразуем изображения в формат 28x28 для отображения
+    image_4 = X_test[index_4].reshape(28, 28)
+    image_not_4 = X_test[index_not_4].reshape(28, 28)
+
+    # Получаем предсказания сети
+    prediction_4 = model.forward(X_test[index_4 : index_4 + 1])[0, 0]
+    prediction_not_4 = model.forward(X_test[index_not_4 : index_not_4 + 1])[0, 0]
+
+    # Показываем изображение цифры 4
+    plt.imshow(image_4, cmap="gray")
+    plt.title(f"Prediction: {prediction_4:.2f}")  # Подпись с предсказанием сети
+    plt.axis("off")
+    plt.show()
+
+    # Показываем изображение, не являющееся цифрой 4
+    plt.imshow(image_not_4, cmap="gray")
+    plt.title(f"Prediction: {prediction_not_4:.2f}")  # Подпись с предсказанием сети
+    plt.axis("off")
+    plt.show()
+
+
+show_test_image()
