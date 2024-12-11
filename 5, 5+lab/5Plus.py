@@ -84,18 +84,13 @@ print(f"Test Accuracy: {accuracy * 100:.2f}%")
 
 
 def show_multiple_test_images():
-    # Индексы изображений с меткой 4 и не 4
-    indices_4 = np.where(y_test == 1)[0][:10]  # Первые 10 изображений с меткой 4
-    indices_not_4 = np.where(y_test == 0)[0][:10]  # Первые 10 изображений с меткой не 4
-
-    # Объединяем индексы
-    indices = np.concatenate((indices_4, indices_not_4))
-    labels = ["4"] * 10 + ["Not 4"] * 10
+    # Генерируем случайные индексы
+    indices = np.random.choice(len(y_test), size=10, replace=False)
 
     # Создаем фигуру
-    fig, axes = plt.subplots(2, 10, figsize=(15, 5))
+    fig, axes = plt.subplots(1, 10, figsize=(15, 5))
 
-    for i, (ax, idx, label) in enumerate(zip(axes.ravel(), indices, labels)):
+    for i, (ax, idx) in enumerate(zip(axes.ravel(), indices)):
         # Преобразуем изображение
         image = X_test[idx].reshape(28, 28)
 
@@ -105,7 +100,7 @@ def show_multiple_test_images():
         # Отображаем изображение
         ax.imshow(image, cmap="gray")
         ax.set_title(
-            f"{label}\nPred: {prediction:.5f}", fontsize=8
+            f"Pred: {prediction:.5f}", fontsize=8
         )  # Подпись с меткой и предсказанием
         ax.axis("off")
 

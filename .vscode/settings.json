@@ -1,9 +1,15 @@
 {
     "cSpell.words": [
         "cmap",
+        "figsize",
+        "fontsize",
+        "Imba",
         "imshow",
         "keepdims",
         "networkx",
+        "Neuro",
+        "openml",
+        "suptitle",
         "Гиперпараметры",
         "персептронов",
         "персептроны",
