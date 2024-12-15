@@ -73,10 +73,13 @@ augmented_x_train, augmented_y_train = create_augmented_data(x_train, y_train)
 
 # Определение класса модели
 class Model:
-    def __init__(self, hidden_neurons=25, epochs=20, learning_rate=0.01):
+    def __init__(
+        self, hidden_neurons=25, epochs=20, learning_rate=0.01, model_name="Model"
+    ):
         self.hidden_neurons = hidden_neurons
         self.EPOCHS = epochs
         self.LEARNING_RATE = learning_rate
+        self.model_name = model_name  # Название модели
         # Инициализация весов с использованием случайных значений
         self.hidden_layer_w = np.random.uniform(-0.1, 0.1, (hidden_neurons, 785))
         self.output_layer_w = np.random.uniform(-0.1, 0.1, (10, hidden_neurons + 1))
@@ -135,7 +138,7 @@ class Model:
 
     def show_learning(self, epoch_no, train_acc, test_acc):
         print(
-            f"Эпоха {epoch_no + 1}: Точность на обучении: {train_acc:.4f}, Точность на тесте: {test_acc:.4f}"
+            f"[{self.model_name}] Эпоха {epoch_no + 1}: Точность на обучении: {train_acc:.4f}, Точность на тесте: {test_acc:.4f}"
         )
         self.chart_x.append(epoch_no + 1)
         self.chart_y_train.append(1.0 - train_acc)
@@ -144,6 +147,7 @@ class Model:
     def plot_learning(self):
         plt.plot(self.chart_x, self.chart_y_train, "r-", label="Ошибка на обучении")
         plt.plot(self.chart_x, self.chart_y_test, "b-", label="Ошибка на тесте")
+        plt.title(f"Обучение модели: {self.model_name}")  # Добавляем заголовок
         plt.xlabel("Эпохи")
         plt.ylabel("Ошибка")
         plt.legend()
@@ -183,9 +187,15 @@ def train_model(model, x_train, y_train, x_test, y_test):
 
 if __name__ == "__main__":
     # Создание экземпляров моделей с различными параметрами
-    base_model = Model(hidden_neurons=24, epochs=20, learning_rate=0.01)
-    improved_model = Model(hidden_neurons=38, epochs=50, learning_rate=0.005)
-    augmented_model = Model(hidden_neurons=38, epochs=50, learning_rate=0.005)
+    base_model = Model(
+        hidden_neurons=24, epochs=20, learning_rate=0.01, model_name="Base Model"
+    )
+    improved_model = Model(
+        hidden_neurons=38, epochs=50, learning_rate=0.005, model_name="Improved Model"
+    )
+    augmented_model = Model(
+        hidden_neurons=38, epochs=50, learning_rate=0.005, model_name="Augmented Model"
+    )
 
     # Создание процессов для параллельного обучения моделей
     processes = []
