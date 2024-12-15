@@ -183,9 +183,9 @@ def train_model(model, x_train, y_train, x_test, y_test):
 
 if __name__ == "__main__":
     # Создание экземпляров моделей с различными параметрами
-    base_model = Model(hidden_neurons=50, epochs=30, learning_rate=0.01)
-    improved_model = Model(hidden_neurons=100, epochs=50, learning_rate=0.005)
-    augmented_model = Model(hidden_neurons=100, epochs=50, learning_rate=0.005)
+    base_model = Model(hidden_neurons=24, epochs=20, learning_rate=0.01)
+    improved_model = Model(hidden_neurons=38, epochs=50, learning_rate=0.005)
+    augmented_model = Model(hidden_neurons=38, epochs=50, learning_rate=0.005)
 
     # Создание процессов для параллельного обучения моделей
     processes = []
