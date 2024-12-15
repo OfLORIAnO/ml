@@ -179,10 +179,10 @@ class Model:
 
 
 # Функция для обучения модели
-def train_model(model, x_train, y_train, x_test, y_test):
+def train_model(model, x_train, y_train, x_test, y_test, model_name="Model"):
     model.train(x_train, y_train, x_test, y_test)
     accuracy = model.get_accuracy(x_test, y_test)
-    print(f"Точность модели: {accuracy * 100:.2f}%")
+    print(f"Точность модели [{model_name}]: {accuracy * 100:.2f}%")
 
 
 if __name__ == "__main__":
@@ -200,9 +200,16 @@ if __name__ == "__main__":
     # Создание процессов для параллельного обучения моделей
     processes = []
     models = [
-        (base_model, x_train, y_train, x_test, y_test),
-        (improved_model, x_train, y_train, x_test, y_test),
-        (augmented_model, augmented_x_train, augmented_y_train, x_test, y_test),
+        (base_model, x_train, y_train, x_test, y_test, "Base Model"),
+        (improved_model, x_train, y_train, x_test, y_test, "Improved Model"),
+        (
+            augmented_model,
+            augmented_x_train,
+            augmented_y_train,
+            x_test,
+            y_test,
+            "Augmented Model",
+        ),
     ]
 
     for model_args in models:
