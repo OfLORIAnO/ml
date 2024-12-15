@@ -2,41 +2,38 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.datasets import fetch_openml
 import multiprocessing
+from functools import partial
 
+# Установка начального зерна для воспроизводимости
 np.random.seed(7)
 
 
-# Load MNIST dataset
+# Загрузка датасета MNIST
 def read_mnist():
-    mnist = fetch_openml("mnist_784", version=1)
-    images = mnist.data.to_numpy()
-    labels = mnist.target.to_numpy()
+    mnist = fetch_openml("mnist_784", version=1, as_frame=False)
+    images, labels = mnist["data"], mnist["target"].astype(int)
 
-    train_images = images[:60000]
-    train_labels = labels[:60000].astype(int)
-    test_images = images[60000:]
-    test_labels = labels[60000:].astype(int)
+    # Разделение на обучающую и тестовую выборки
+    train_images, train_labels = images[:60000], labels[:60000]
+    test_images, test_labels = images[60000:], labels[60000:]
 
     return train_images, train_labels, test_images, test_labels
 
 
-# Prepare data
+# Подготовка данных
 train_images, train_labels, test_images, test_labels = read_mnist()
-x_train = train_images.reshape(60000, 784)
-x_test = test_images.reshape(10000, 784)
+x_train = train_images.astype(np.float32)
+x_test = test_images.astype(np.float32)
 mean, stddev = np.mean(x_train), np.std(x_train)
 x_train = (x_train - mean) / stddev
 x_test = (x_test - mean) / stddev
 
-y_train = np.zeros((60000, 10))
-y_test = np.zeros((10000, 10))
-for i, y in enumerate(train_labels):
-    y_train[i][y] = 1
-for i, y in enumerate(test_labels):
-    y_test[i][y] = 1
+# Создание one-hot представления меток
+y_train = np.eye(10)[train_labels]
+y_test = np.eye(10)[test_labels]
 
 
-# Shift image function
+# Функция для сдвига изображения
 def shift_image(image, direction):
     image_2d = image.reshape(28, 28)
     shifted_image = np.zeros_like(image_2d)
@@ -53,138 +50,126 @@ def shift_image(image, direction):
     return shifted_image.reshape(784)
 
 
-# Create augmented dataset
-augmented_x_train = []
-augmented_y_train = []
+# Создание аугментированного датасета с предварительным выделением памяти
+def create_augmented_data(x_train, y_train):
+    directions = ["left", "right", "up", "down"]
+    augmented_size = x_train.shape[0] * 5  # Оригинал + 4 направления
+    augmented_x = np.zeros((augmented_size, 784), dtype=np.float32)
+    augmented_y = np.zeros((augmented_size, 10), dtype=np.float32)
 
-for idx, image in enumerate(x_train):
-    augmented_x_train.append(image)  # Original image
-    augmented_y_train.append(y_train[idx])  # Original label
+    # Копирование оригинальных данных
+    augmented_x[::5] = x_train
+    augmented_y[::5] = y_train
 
-    # Add shifted images
-    for direction in ["left", "right", "up", "down"]:
-        augmented_x_train.append(shift_image(image, direction))
-        augmented_y_train.append(y_train[idx])
+    for i, direction in enumerate(directions):
+        augmented_x[i::5] = np.array([shift_image(img, direction) for img in x_train])
+        augmented_y[i::5] = y_train
 
-augmented_x_train = np.array(augmented_x_train)
-augmented_y_train = np.array(augmented_y_train)
+    return augmented_x, augmented_y
 
 
-# Model class definition
+augmented_x_train, augmented_y_train = create_augmented_data(x_train, y_train)
+
+
+# Определение класса модели
 class Model:
     def __init__(self, hidden_neurons=25, epochs=20, learning_rate=0.01):
         self.hidden_neurons = hidden_neurons
         self.EPOCHS = epochs
         self.LEARNING_RATE = learning_rate
-        self.hidden_layer_w = self.layer_w(25, 784)
-        self.hidden_layer_y = np.zeros(25)
-        self.hidden_layer_error = np.zeros(25)
-        self.output_layer_w = self.layer_w(10, 25)
+        # Инициализация весов с использованием случайных значений
+        self.hidden_layer_w = np.random.uniform(-0.1, 0.1, (hidden_neurons, 785))
+        self.output_layer_w = np.random.uniform(-0.1, 0.1, (10, hidden_neurons + 1))
+        # Для хранения значений активации и ошибок
+        self.hidden_layer_y = np.zeros(hidden_neurons)
         self.output_layer_y = np.zeros(10)
+        self.hidden_layer_error = np.zeros(hidden_neurons)
         self.output_layer_error = np.zeros(10)
+        # Для построения графика обучения
         self.chart_x = []
         self.chart_y_train = []
         self.chart_y_test = []
 
     def get_accuracy(self, x_test, y_test):
-        correct_results = 0
-        x_test_with_bias = np.concatenate(
-            (np.ones((x_test.shape[0], 1)), x_test), axis=1
-        )  # Bias добавляется один раз для всех данных
-        for idx in range(len(x_test)):
-            x = x_test_with_bias[idx]
+        correct = 0
+        x_test_with_bias = np.hstack((np.ones((x_test.shape[0], 1)), x_test))
+        for x, y in zip(x_test_with_bias, y_test):
             self.forward_pass(x)
-            if self.output_layer_y.argmax() == y_test[idx].argmax():
-                correct_results += 1
-        accuracy = correct_results / len(x_test)
-        return accuracy
-
-    def layer_w(self, neuron_count, input_count):
-        weights = np.zeros((neuron_count, input_count + 1))
-        for i in range(neuron_count):
-            for j in range(1, input_count + 1):
-                weights[i][j] = np.random.uniform(-0.1, 0.1)
-        return weights
+            if np.argmax(self.output_layer_y) == np.argmax(y):
+                correct += 1
+        return correct / len(x_test)
 
     def forward_pass(self, x):
-        for i, w in enumerate(self.hidden_layer_w):
-            z = np.dot(w, x)
-            self.hidden_layer_y[i] = np.tanh(z)
+        # Вычисление активации скрытого слоя
+        z_hidden = np.dot(self.hidden_layer_w, x)
+        self.hidden_layer_y = np.tanh(z_hidden)
+        # Добавление смещения для скрытого слоя
+        hidden_with_bias = np.hstack(([1.0], self.hidden_layer_y))
+        # Вычисление активации выходного слоя
+        z_output = np.dot(self.output_layer_w, hidden_with_bias)
+        self.output_layer_y = 1.0 / (1.0 + np.exp(-z_output))
 
-        hidden_output_array = np.concatenate((np.array([1.0]), self.hidden_layer_y))
+    def backward_pass(self, x, y_truth):
+        # Вычисление ошибки выходного слоя
+        error_output = (
+            -(y_truth - self.output_layer_y)
+            * self.output_layer_y
+            * (1 - self.output_layer_y)
+        )
+        self.output_layer_error = error_output
 
-        for i, w in enumerate(self.output_layer_w):
-            z = np.dot(w, hidden_output_array)
-            self.output_layer_y[i] = 1.0 / (1.0 + np.exp(-z))
+        # Вычисление ошибки скрытого слоя
+        error_hidden = np.dot(self.output_layer_w[:, 1:].T, self.output_layer_error) * (
+            1 - self.hidden_layer_y**2
+        )
+        self.hidden_layer_error = error_hidden
 
-    def backward_pass(self, y_truth):
-        for i, y in enumerate(self.output_layer_y):
-            error_prime = -(y_truth[i] - y)
-            derivative = y * (1.0 - y)
-            self.output_layer_error[i] = error_prime * derivative
+        # Обновление весов выходного слоя
+        hidden_with_bias = np.hstack(([1.0], self.hidden_layer_y))
+        self.output_layer_w -= self.LEARNING_RATE * np.outer(
+            error_output, hidden_with_bias
+        )
 
-        for i, y in enumerate(self.hidden_layer_y):
-            error_weights = [w[i + 1] for w in self.output_layer_w]
-            derivative = 1.0 - y**2
-            weighted_error = np.dot(np.array(error_weights), self.output_layer_error)
-            self.hidden_layer_error[i] = weighted_error * derivative
-
-    def adjust_weights(self, x):
-        for i, error in enumerate(self.hidden_layer_error):
-            self.hidden_layer_w[i] -= x * self.LEARNING_RATE * error
-
-        hidden_output_array = np.concatenate((np.array([1.0]), self.hidden_layer_y))
-
-        for i, error in enumerate(self.output_layer_error):
-            self.output_layer_w[i] -= hidden_output_array * self.LEARNING_RATE * error
+        # Обновление весов скрытого слоя
+        self.hidden_layer_w -= self.LEARNING_RATE * np.outer(error_hidden, x)
 
     def show_learning(self, epoch_no, train_acc, test_acc):
         print(
-            f"Epoch {epoch_no + 1}: Training Accuracy: {train_acc:.4f}, Test Accuracy: {test_acc:.4f}"
+            f"Эпоха {epoch_no + 1}: Точность на обучении: {train_acc:.4f}, Точность на тесте: {test_acc:.4f}"
         )
         self.chart_x.append(epoch_no + 1)
         self.chart_y_train.append(1.0 - train_acc)
         self.chart_y_test.append(1.0 - test_acc)
 
     def plot_learning(self):
-        plt.plot(self.chart_x, self.chart_y_train, "r-", label="Training Error")
-        plt.plot(self.chart_x, self.chart_y_test, "b-", label="Test Error")
-        plt.axis([0, len(self.chart_x), 0.0, 1.0])
-        plt.xlabel("Epochs")
-        plt.ylabel("Error")
+        plt.plot(self.chart_x, self.chart_y_train, "r-", label="Ошибка на обучении")
+        plt.plot(self.chart_x, self.chart_y_test, "b-", label="Ошибка на тесте")
+        plt.xlabel("Эпохи")
+        plt.ylabel("Ошибка")
         plt.legend()
         plt.show()
 
     def train(self, x_train, y_train, x_test, y_test):
-        x_train_with_bias = np.concatenate(
-            (np.ones((x_train.shape[0], 1)), x_train), axis=1
-        )  # Bias добавляем один раз
-        index_list = list(range(len(x_train)))
-
+        # Добавление смещения к обучающим данным
+        x_train_with_bias = np.hstack((np.ones((x_train.shape[0], 1)), x_train))
         for epoch in range(self.EPOCHS):
-            np.random.shuffle(index_list)
-            correct_training_results = 0
+            # Перемешивание данных для каждой эпохи
+            indices = np.random.permutation(x_train.shape[0])
+            correct_train = 0
 
-            for idx in index_list:
-                x = x_train_with_bias[idx]  # Используем данные с bias
+            for idx in indices:
+                x = x_train_with_bias[idx]
+                y = y_train[idx]
                 self.forward_pass(x)
-                if self.output_layer_y.argmax() == y_train[idx].argmax():
-                    correct_training_results += 1
-                self.backward_pass(y_train[idx])
-                self.adjust_weights(x)
+                if np.argmax(self.output_layer_y) == np.argmax(y):
+                    correct_train += 1
+                self.backward_pass(x, y)
 
-            correct_test_results = 0
-            for idx in range(len(x_test)):
-                x = np.concatenate((np.array([1.0]), x_test[idx]))  # bias для теста
-                self.forward_pass(x)
-                if self.output_layer_y.argmax() == y_test[idx].argmax():
-                    correct_test_results += 1
+            # Вычисление точности на тестовых данных
+            train_acc = correct_train / x_train.shape[0]
+            test_acc = self.get_accuracy(x_test, y_test)
 
-            self.show_learning(
-                epoch,
-                correct_training_results / len(x_train),
-                correct_test_results / len(x_test),
-            )
+            self.show_learning(epoch, train_acc, test_acc)
 
         self.plot_learning()
 
@@ -193,37 +178,27 @@ class Model:
 def train_model(model, x_train, y_train, x_test, y_test):
     model.train(x_train, y_train, x_test, y_test)
     accuracy = model.get_accuracy(x_test, y_test)
-    print(f"Model accuracy: {accuracy * 100:.2f}%")
+    print(f"Точность модели: {accuracy * 100:.2f}%")
 
 
 if __name__ == "__main__":
-    # Создание экземпляров моделей
+    # Создание экземпляров моделей с различными параметрами
     base_model = Model(hidden_neurons=50, epochs=30, learning_rate=0.01)
     improved_model = Model(hidden_neurons=100, epochs=50, learning_rate=0.005)
     augmented_model = Model(hidden_neurons=100, epochs=50, learning_rate=0.005)
 
-    # Используем multiprocessing для параллельного обучения
+    # Создание процессов для параллельного обучения моделей
     processes = []
+    models = [
+        (base_model, x_train, y_train, x_test, y_test),
+        (improved_model, x_train, y_train, x_test, y_test),
+        (augmented_model, augmented_x_train, augmented_y_train, x_test, y_test),
+    ]
 
-    # Создаем процессы для обучения каждой модели
-    p1 = multiprocessing.Process(
-        target=train_model, args=(base_model, x_train, y_train, x_test, y_test)
-    )
-    p2 = multiprocessing.Process(
-        target=train_model, args=(improved_model, x_train, y_train, x_test, y_test)
-    )
-    p3 = multiprocessing.Process(
-        target=train_model,
-        args=(augmented_model, augmented_x_train, augmented_y_train, x_test, y_test),
-    )
-
-    # Запуск процессов
-    processes.append(p1)
-    processes.append(p2)
-    processes.append(p3)
+    for model_args in models:
+        p = multiprocessing.Process(target=train_model, args=model_args)
+        processes.append(p)
+        p.start()
 
     for p in processes:
-        p.start()  # Запуск процесса
-
-    for p in processes:
-        p.join()  # Ожидание завершения всех процессов
+        p.join()
