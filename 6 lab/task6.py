@@ -2,13 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.datasets import fetch_openml
 import multiprocessing
-from functools import partial
 
 # Установка начального зерна для воспроизводимости
 np.random.seed(7)
 
 
-# Загрузка датасета MNIST
+# Загрузка датасета MNISTп
 def read_mnist():
     mnist = fetch_openml("mnist_784", version=1, as_frame=False)
     images, labels = mnist["data"], mnist["target"].astype(int)
@@ -147,7 +146,7 @@ class Model:
     def plot_learning(self):
         plt.plot(self.chart_x, self.chart_y_train, "r-", label="Ошибка на обучении")
         plt.plot(self.chart_x, self.chart_y_test, "b-", label="Ошибка на тесте")
-        plt.title(f"Обучение модели: {self.model_name}")  # Добавляем заголовок
+        plt.title(f"Обучение модели: {self.model_name}")
         plt.xlabel("Эпохи")
         plt.ylabel("Ошибка")
         plt.legend()
@@ -197,25 +196,35 @@ if __name__ == "__main__":
         hidden_neurons=38, epochs=50, learning_rate=0.005, model_name="Augmented Model"
     )
 
-    # Создание процессов для параллельного обучения моделей
-    processes = []
-    models = [
-        (base_model, x_train, y_train, x_test, y_test, "Base Model"),
-        (improved_model, x_train, y_train, x_test, y_test, "Improved Model"),
-        (
-            augmented_model,
-            augmented_x_train,
-            augmented_y_train,
-            x_test,
-            y_test,
-            "Augmented Model",
-        ),
-    ]
+    train_model(base_model, x_train, y_train, x_test, y_test, "Base Model")
+    train_model(improved_model, x_train, y_train, x_test, y_test, "Improved Model")
+    train_model(
+        augmented_model,
+        augmented_x_train,
+        augmented_y_train,
+        x_test,
+        y_test,
+        "Augmented Model",
+    )
 
-    for model_args in models:
-        p = multiprocessing.Process(target=train_model, args=model_args)
-        processes.append(p)
-        p.start()
+    # # Создание процессов для параллельного обучения моделей
+    # processes = []
+    # models = [
+    #     (base_model, x_train, y_train, x_test, y_test, "Base Model"),
+    #     (improved_model, x_train, y_train, x_test, y_test, "Improved Model"),
+    #     (
+    #         augmented_model,
+    #         augmented_x_train,
+    #         augmented_y_train,
+    #         x_test,    #         y_test,
+    #         "Augmented Model",
+    #     ),
+    # ]
 
-    for p in processes:
-        p.join()
+    # for model_args in models:
+    #     p = multiprocessing.Process(target=train_model, args=model_args)
+    #     processes.append(p)
+    #     p.start()
+
+    # for p in processes:
+    #     p.join()
