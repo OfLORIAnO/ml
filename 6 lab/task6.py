@@ -30,6 +30,7 @@ x_test = (x_test - mean) / stddev
 # Создание one-hot представления меток
 y_train = np.eye(10)[train_labels]
 y_test = np.eye(10)[test_labels]
+print(y_train)
 
 
 # Функция для сдвига изображения
