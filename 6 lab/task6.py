@@ -184,6 +184,34 @@ def train_model(model, x_train, y_train, x_test, y_test, model_name="Model"):
     print(f"Точность модели [{model_name}]: {accuracy * 100:.2f}%")
 
 
+def visualize_predictions(model, x_test, y_test, num_samples=5, model_name="Model"):
+    """
+    Функция для отображения изображений и их предсказанных классов.
+    """
+    x_test_with_bias = np.hstack((np.ones((x_test.shape[0], 1)), x_test))
+    selected_indices = np.random.choice(x_test.shape[0], num_samples, replace=False)
+
+    plt.figure(figsize=(10, 2 * num_samples))
+
+    for i, idx in enumerate(selected_indices):
+        image = x_test[idx].reshape(28, 28)
+        model.forward_pass(x_test_with_bias[idx])
+        predicted_label = np.argmax(model.output_layer_y)
+
+        plt.subplot(num_samples, 2, 2 * i + 1)
+        plt.imshow(image, cmap="gray")
+        plt.axis("off")
+        plt.title(f"[{model_name}] Pred: {predicted_label}")
+
+        plt.subplot(num_samples, 2, 2 * i + 2)
+        plt.bar(range(10), model.output_layer_y)
+        plt.xticks(range(10))
+        plt.title("Predicted Probabilities")
+
+    plt.tight_layout()
+    plt.show()
+
+
 if __name__ == "__main__":
     # Создание экземпляров моделей с различными параметрами
     base_model = Model(
@@ -205,6 +233,16 @@ if __name__ == "__main__":
         x_test,
         y_test,
         "Augmented Model",
+    )
+
+    visualize_predictions(
+        base_model, x_test, y_test, num_samples=5, model_name="Base Model"
+    )
+    visualize_predictions(
+        improved_model, x_test, y_test, num_samples=5, model_name="Improved Model"
+    )
+    visualize_predictions(
+        augmented_model, x_test, y_test, num_samples=5, model_name="Augmented Model"
     )
 
     # # Создание процессов для параллельного обучения моделей
