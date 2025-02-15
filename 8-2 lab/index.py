@@ -1,7 +1,8 @@
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.regularizers import l2
 import numpy as np
 
 # Параметры обучения
@@ -12,9 +13,6 @@ BATCH_SIZE = 16
 boston_housing = keras.datasets.boston_housing
 (raw_x_train, y_train), (raw_x_test, y_test) = boston_housing.load_data()
 
-# Вывод всех raw_x_train в консоль
-for i, row in enumerate(raw_x_train):
-    print(f"raw_x_train[{i}]: {row}")
 
 # Стандартизация данных
 x_mean = np.mean(raw_x_train, axis=0)
@@ -24,10 +22,12 @@ x_test = (raw_x_test - x_mean) / x_stddev
 
 # Создание модели
 model = Sequential()
-model.add(Dense(64, activation="relu", input_shape=[13]))
-model.add(Dense(64, activation="relu"))
-model.add(Dense(1, activation="linear"))
-
+model.add(Dense(64, activation="relu", input_shape=[13], bias_regularizer=l2(0.1)))
+model.add(Dense(64, activation="relu", bias_regularizer=l2(0.1)))
+model.add(Dense(128, activation="relu", bias_regularizer=l2(0.1)))
+model.add(Dropout(0.3))
+model.add(Dense(1, activation="linear", bias_regularizer=l2(0.1)))
+model.summary()
 # Компиляция модели
 model.compile(
     loss="mean_squared_error", optimizer="adam", metrics=["mean_absolute_error"]

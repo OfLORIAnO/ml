@@ -16,14 +16,14 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 tf.random.set_seed(7)
 
 # Глобальные параметры обучения
-EPOCHS = 20
-BATCH_SIZE = 32
+EPOCHS = 20  # Количество эпох обучения (добавлено мной)
+BATCH_SIZE = 32  # Размер батча для обучения (добавлено мной)
 
 # Загрузка и подготовка данных MNIST
 mnist = keras.datasets.mnist
 (train_images, train_labels), (test_images, test_labels) = mnist.load_data()
 
-# Стандартизация входных данных
+# Стандартизация входных данных (добавлено мной)
 mean = np.mean(train_images)
 stddev = np.std(train_images)
 train_images = (train_images - mean) / stddev
@@ -33,18 +33,22 @@ test_images = (test_images - mean) / stddev
 train_labels = to_categorical(train_labels, num_classes=10)
 test_labels = to_categorical(test_labels, num_classes=10)
 
-# Инициализация весов (Glorot, так как N = 15 нечётное)
+# Инициализация весов (Glorot, так как N = 15 нечётное) (добавлено мной)
 initializer = keras.initializers.GlorotUniform()
 
-# Определение модели с тремя скрытыми слоями и функцией активации tanh
+# Определение модели с тремя скрытыми слоями и функцией активации tanh (добавлено мной)
 model = keras.Sequential(
     [
-        keras.layers.Flatten(input_shape=(28, 28)),
+        keras.layers.Flatten(
+            input_shape=(28, 28)
+        ),  # Преобразование 28x28 вектор в одномерный массив
         keras.layers.Dense(
             64, kernel_initializer=initializer, bias_initializer="zeros"
         ),
-        keras.layers.BatchNormalization(),  # Пакетная нормализация перед активацией
-        keras.layers.Activation("tanh"),
+        keras.layers.BatchNormalization(),  # Пакетная нормализация перед активацией (добавлено мной)
+        keras.layers.Activation(
+            "tanh"
+        ),  # Используем tanh, так как N нечётное (добавлено мной)
         keras.layers.Dense(
             32, kernel_initializer=initializer, bias_initializer="zeros"
         ),
@@ -57,15 +61,17 @@ model = keras.Sequential(
         keras.layers.Activation("tanh"),
         keras.layers.Dense(
             10,
-            activation="sigmoid",
+            activation="sigmoid",  # На выходе сигмоида для вероятностей классов
             kernel_initializer=initializer,
             bias_initializer="zeros",
         ),
     ]
 )
 
-# Компиляция модели с SGD оптимизатором и MSE функцией потерь
-opt = keras.optimizers.SGD(learning_rate=0.005)
+# Компиляция модели с SGD оптимизатором и MSE функцией потерь (изменено мной)
+opt = keras.optimizers.SGD(
+    learning_rate=0.005
+)  # Уменьшил скорость обучения до 0.005 (добавлено мной)
 model.compile(loss="MSE", optimizer=opt, metrics=["accuracy"])
 
 # Обучение модели
@@ -107,7 +113,7 @@ def plot_training_progress(history):
 def plot_predictions(model, test_images, test_labels):
     indices = random.sample(
         range(len(test_images)), 9
-    )  # Выбираем 9 случайных изображений
+    )  # Выбираем 9 случайных изображений (добавлено мной)
     images = test_images[indices]
     labels = np.argmax(test_labels[indices], axis=1)  # Истинные метки
     predictions = model.predict(images)  # Предсказания модели

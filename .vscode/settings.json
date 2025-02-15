@@ -1,21 +1,22 @@
 {
-    "cSpell.words": [
-        "cmap",
-        "figsize",
-        "fontsize",
-        "Imba",
-        "imshow",
-        "keepdims",
-        "networkx",
-        "Neuro",
-        "openml",
-        "suptitle",
-        "ylabel",
-        "Гиперпараметры",
-        "датасета",
-        "персептронов",
-        "персептроны",
-        "сигмоиду",
-        "сигмоиды"
-    ]
+  "cSpell.words": [
+    "cmap",
+    "figsize",
+    "fontsize",
+    "Imba",
+    "imshow",
+    "keepdims",
+    "networkx",
+    "Neuro",
+    "openml",
+    "regularizers",
+    "suptitle",
+    "ylabel",
+    "Гиперпараметры",
+    "датасета",
+    "персептронов",
+    "персептроны",
+    "сигмоиду",
+    "сигмоиды"
+  ]
 }
