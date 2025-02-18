@@ -78,7 +78,7 @@ configs = {
 }
 
 EPOCHS = 5
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 histories = {}
 
 # --- Обучение моделей ---
