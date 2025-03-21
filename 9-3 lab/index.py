@@ -1,121 +1,122 @@
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout
-from tensorflow.keras.regularizers import l2
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
+from tensorflow.keras.layers import Conv2D, Dense, Flatten, Dropout, MaxPooling2D
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.utils import to_categorical
 
-# Параметры обучения
-EPOCHS = 500
-BATCH_SIZE = 16
+# ? Загрузка и предобработка данных
+cifar_dataset = keras.datasets.cifar10
+(train_images, train_labels), (test_images, test_labels) = cifar_dataset.load_data()
 
-# Загрузка данных
-boston_housing = keras.datasets.boston_housing
-(raw_x_train, y_train), (raw_x_test, y_test) = boston_housing.load_data()
+# ? Нормализация
 
-# Стандартизация данных
-x_mean = np.mean(raw_x_train, axis=0)
-x_stddev = np.std(raw_x_train, axis=0)
-x_train = (raw_x_train - x_mean) / x_stddev
-x_test = (raw_x_test - x_mean) / x_stddev
+mean = np.mean(train_images)
+stddev = np.std(train_images)
+train_images = (train_images - mean) / stddev
+test_images = (test_images - mean) / stddev
 
-# Конфигурации моделей
+# ? One-hot encoding меток
+
+train_labels = to_categorical(train_labels, num_classes=10)
+test_labels = to_categorical(test_labels, num_classes=10)
+
+# ? Конфиги
 configs = {
-    "Base Model": lambda: Sequential(
-        [
-            Dense(64, activation="relu", input_shape=[13]),
-            Dense(64, activation="relu"),
-            Dense(1, activation="linear"),
-        ]
-    ),
-    "L2 Regularization (0.1)": lambda: Sequential(
-        [
-            Dense(64, activation="relu", input_shape=[13], bias_regularizer=l2(0.1)),
-            Dense(64, activation="relu", bias_regularizer=l2(0.1)),
-            Dense(1, activation="linear"),
-        ]
-    ),
-    "L2 + Dropout (0.2)": lambda: Sequential(
-        [
-            Dense(64, activation="relu", input_shape=[13], bias_regularizer=l2(0.1)),
-            Dropout(0.2),
-            Dense(64, activation="relu", bias_regularizer=l2(0.1)),
-            Dense(1, activation="linear"),
-        ]
-    ),
-    "More Neurons (128)": lambda: Sequential(
-        [
-            Dense(128, activation="relu", input_shape=[13], bias_regularizer=l2(0.1)),
-            Dense(128, activation="relu", bias_regularizer=l2(0.1)),
-            Dense(1, activation="linear"),
-        ]
-    ),
-    "Final Model (Dropout 0.3)": lambda: Sequential(
-        [
-            Dense(128, activation="relu", input_shape=[13], bias_regularizer=l2(0.1)),
-            Dense(128, activation="relu", bias_regularizer=l2(0.1)),
-            Dropout(0.3),
-            Dense(1, activation="linear"),
-        ]
-    ),
+    "Conf1": [
+        Conv2D(64, (5, 5), strides=(2, 2), activation="relu", padding="same"),
+        Conv2D(64, (3, 3), strides=(2, 2), activation="relu", padding="same"),
+        Flatten(),
+        Dense(10, activation="softmax"),
+    ],
+    "Conf2": [
+        Conv2D(64, (3, 3), strides=(2, 2), activation="relu", padding="same"),
+        Conv2D(16, (2, 2), strides=(2, 2), activation="relu", padding="same"),
+        Flatten(),
+        Dense(10, activation="softmax"),
+    ],
+    "Conf3": [
+        Conv2D(64, (3, 3), strides=(2, 2), activation="relu", padding="same"),
+        Conv2D(16, (2, 2), strides=(2, 2), activation="relu", padding="same"),
+        Dropout(0.2),
+        Flatten(),
+        Dense(10, activation="softmax"),
+    ],
+    "Conf4": [
+        Conv2D(64, (4, 4), strides=(1, 1), activation="relu", padding="same"),
+        Conv2D(64, (2, 2), strides=(2, 2), activation="relu", padding="same"),
+        Conv2D(32, (3, 3), strides=(1, 1), activation="relu", padding="same"),
+        MaxPooling2D(pool_size=(2, 2)),
+        Dense(64, activation="relu"),
+        Dropout(0.2),
+        Flatten(),
+        Dense(10, activation="softmax"),
+    ],
+    "Conf5": [
+        Conv2D(64, (4, 4), strides=(1, 1), activation="relu", padding="same"),
+        Conv2D(64, (2, 2), strides=(2, 2), activation="relu", padding="same"),
+        Conv2D(32, (3, 3), strides=(1, 1), activation="relu", padding="same"),
+        Conv2D(32, (3, 3), strides=(1, 1), activation="relu", padding="same"),
+        MaxPooling2D(pool_size=(2, 2)),
+        Dense(64, activation="relu"),
+        Dense(64, activation="relu"),
+        Dropout(0.2),
+        Flatten(),
+        Dense(10, activation="softmax"),
+    ],
+    "Conf6": [
+        Conv2D(64, (4, 4), strides=(1, 1), activation="tanh", padding="same"),
+        Conv2D(64, (2, 2), strides=(2, 2), activation="tanh", padding="same"),
+        Conv2D(32, (3, 3), strides=(1, 1), activation="tanh", padding="same"),
+        Conv2D(32, (3, 3), strides=(1, 1), activation="tanh", padding="same"),
+        MaxPooling2D(pool_size=(2, 2)),
+        Dense(64, activation="tanh"),
+        Dense(64, activation="tanh"),
+        Dropout(0.2),
+        Flatten(),
+        Dense(10, activation="softmax"),
+    ],
 }
 
-results = []
+EPOCHS = 15
+BATCH_SIZE = 32
+histories = {}
 
-# Запуск всех конфигураций
-for name, model_fn in configs.items():
-    print(f"Training: {name}")
-    model = model_fn()
+# ? Обучение моделей
+for name, layers in configs.items():
+    model = Sequential([keras.layers.Input(shape=(32, 32, 3))] + layers)
     model.compile(
-        loss="mean_squared_error", optimizer="adam", metrics=["mean_absolute_error"]
+        loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"]
     )
+
+    print(f"Обучение модели {name} ...")
     history = model.fit(
-        x_train,
-        y_train,
-        validation_data=(x_test, y_test),
+        train_images,
+        train_labels,
+        validation_data=(test_images, test_labels),
         epochs=EPOCHS,
         batch_size=BATCH_SIZE,
-        verbose=0,
-        shuffle=True,
+        verbose=1,
     )
 
-    # Получение финальных ошибок
-    final_train_loss = history.history["loss"][-1]
-    final_val_loss = history.history["val_loss"][-1]
-    final_train_mae = history.history["mean_absolute_error"][-1]
-    final_val_mae = history.history["val_mean_absolute_error"][-1]
+    histories[name] = history
 
-    results.append(
-        [name, final_train_loss, final_val_loss, final_train_mae, final_val_mae]
-    )
-
-# Вывод результатов
-results_df = pd.DataFrame(
-    results, columns=["Model", "Train MSE", "Test MSE", "Train MAE", "Test MAE"]
-)
-
-# Визуализация результатов
+# ? Визуализация результатов
 plt.figure(figsize=(12, 6))
-
-# График MSE
-plt.subplot(1, 2, 1)
-plt.bar(results_df["Model"], results_df["Train MSE"], alpha=0.7, label="Train MSE")
-plt.bar(results_df["Model"], results_df["Test MSE"], alpha=0.7, label="Test MSE")
-plt.xticks(rotation=45, ha="right")
-plt.ylabel("MSE")
-plt.title("Mean Squared Error Comparison")
+for name, history in histories.items():
+    plt.plot(history.history["val_loss"], label=f"{name} (Test Loss)")
+plt.xlabel("Эпохи")
+plt.ylabel("Ошибка")
 plt.legend()
+plt.title("Сравнение ошибок тестирования для разных конфигураций")
+plt.show()
 
-# График MAE
-plt.subplot(1, 2, 2)
-plt.bar(results_df["Model"], results_df["Train MAE"], alpha=0.7, label="Train MAE")
-plt.bar(results_df["Model"], results_df["Test MAE"], alpha=0.7, label="Test MAE")
-plt.xticks(rotation=45, ha="right")
-plt.ylabel("MAE")
-plt.title("Mean Absolute Error Comparison")
+plt.figure(figsize=(12, 6))
+for name, history in histories.items():
+    plt.plot(history.history["loss"], label=f"{name} (Train Loss)")
+plt.xlabel("Эпохи")
+plt.ylabel("Ошибка")
 plt.legend()
-
-plt.tight_layout()
+plt.title("Сравнение ошибок обучения для разных конфигураций")
 plt.show()

@@ -4,7 +4,6 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.regularizers import l2
 import numpy as np
-import pandas as pd
 
 # Параметры обучения
 EPOCHS = 500
@@ -22,21 +21,21 @@ x_test = (raw_x_test - x_mean) / x_stddev
 
 # Конфигурации моделей
 configs = {
-    "Base Model": lambda: Sequential(
+    "Base Model": Sequential(
         [
             Dense(64, activation="relu", input_shape=[13]),
             Dense(64, activation="relu"),
             Dense(1, activation="linear"),
         ]
     ),
-    "L2 Regularization (0.1)": lambda: Sequential(
+    "L2 Regularization (0.1)": Sequential(
         [
             Dense(64, activation="relu", input_shape=[13], bias_regularizer=l2(0.1)),
             Dense(64, activation="relu", bias_regularizer=l2(0.1)),
             Dense(1, activation="linear"),
         ]
     ),
-    "L2 + Dropout (0.2)": lambda: Sequential(
+    "L2 + Dropout (0.2)": Sequential(
         [
             Dense(64, activation="relu", input_shape=[13], bias_regularizer=l2(0.1)),
             Dropout(0.2),
@@ -44,14 +43,14 @@ configs = {
             Dense(1, activation="linear"),
         ]
     ),
-    "More Neurons (128)": lambda: Sequential(
+    "More Neurons (128)": Sequential(
         [
             Dense(128, activation="relu", input_shape=[13], bias_regularizer=l2(0.1)),
             Dense(128, activation="relu", bias_regularizer=l2(0.1)),
             Dense(1, activation="linear"),
         ]
     ),
-    "Final Model (Dropout 0.3)": lambda: Sequential(
+    "Final Model (Dropout 0.3)": Sequential(
         [
             Dense(128, activation="relu", input_shape=[13], bias_regularizer=l2(0.1)),
             Dense(128, activation="relu", bias_regularizer=l2(0.1)),
@@ -63,7 +62,7 @@ configs = {
 
 # Запуск всех конфигураций
 for name, model_fn in configs.items():
-    model = model_fn()
+    model = model_fn
     model.compile(
         loss="mean_squared_error", optimizer="adam", metrics=["mean_absolute_error"]
     )
